@@ -4,14 +4,16 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Message, Tool, GeminiConfig } from '../types';
 import { cn } from '../lib/utils';
+import { WorkspaceView } from './WorkspaceView';
 
 interface ChatAreaProps {
   tool: Tool;
   config: GeminiConfig;
   token: string | null;
+  onSignIn: () => void;
 }
 
-export function ChatArea({ tool, config, token }: ChatAreaProps) {
+export function ChatArea({ tool, config, token, onSignIn }: ChatAreaProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -109,7 +111,8 @@ export function ChatArea({ tool, config, token }: ChatAreaProps) {
       });
 
       if (!response.ok) {
-        throw new Error(`API error: ${response.status} ${response.statusText}`);
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.error || `API error: ${response.status} ${response.statusText}`);
       }
 
       if (!response.body) throw new Error('No response body');
@@ -118,17 +121,25 @@ export function ChatArea({ tool, config, token }: ChatAreaProps) {
       const decoder = new TextDecoder('utf-8');
       
       let fullContent = '';
+      let buffer = '';
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n').filter(Boolean);
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        // The last element is incomplete until the next newline or stream end
+        buffer = lines.pop() ?? '';
 
         for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
           try {
-            const data = JSON.parse(line);
+            const data = JSON.parse(trimmed);
+            if (data.error) {
+              throw new Error(data.error);
+            }
             if (data.message && data.message.content) {
               fullContent += data.message.content;
               
@@ -140,9 +151,34 @@ export function ChatArea({ tool, config, token }: ChatAreaProps) {
                 )
               );
             }
-          } catch (e) {
-            console.error('Error parsing JSON chunk', e, line);
+          } catch (e: any) {
+            if (e.message && e.message !== 'Unexpected end of JSON input') {
+              console.error('Error parsing JSON chunk', e, trimmed);
+            }
           }
+        }
+      }
+
+      // Process any remaining bytes flushed from decoder
+      buffer += decoder.decode();
+      if (buffer.trim()) {
+        try {
+          const data = JSON.parse(buffer.trim());
+          if (data.error) {
+            throw new Error(data.error);
+          }
+          if (data.message && data.message.content) {
+            fullContent += data.message.content;
+            setMessages((prev) => 
+              prev.map((msg) => 
+                msg.id === assistantMsgId 
+                  ? { ...msg, content: fullContent }
+                  : msg
+              )
+            );
+          }
+        } catch (e) {
+          console.error('Error parsing trailing JSON chunk', e, buffer);
         }
       }
     } catch (err: any) {
@@ -161,7 +197,7 @@ export function ChatArea({ tool, config, token }: ChatAreaProps) {
     // @ts-ignore
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      alert("Speech recognition is not supported in this browser.");
+      setError("Speech recognition is not supported in this browser.");
       return;
     }
     
@@ -184,6 +220,17 @@ export function ChatArea({ tool, config, token }: ChatAreaProps) {
   return (
     <div className="flex-1 flex flex-col h-full bg-zinc-900 relative">
       <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 custom-scrollbar">
+        {tool.id.startsWith('google_') && (
+          <div className="max-w-4xl mx-auto w-full">
+            <WorkspaceView 
+              toolId={tool.id} 
+              token={token} 
+              onSignIn={onSignIn} 
+              onSendToChat={(text) => setInput(text)} 
+            />
+          </div>
+        )}
+
         {messages.map((msg) => (
           <div
             key={msg.id}

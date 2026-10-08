@@ -15,6 +15,10 @@ export interface GeminiConfig {
 
 export type ToolId = 
   | "general"
+  | "google_drive"
+  | "google_calendar"
+  | "google_tasks"
+  | "google_contacts"
   | "code"
   | "image_prompt"
   | "email"

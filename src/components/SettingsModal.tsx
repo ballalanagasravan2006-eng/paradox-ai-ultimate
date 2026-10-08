@@ -46,7 +46,7 @@ export function SettingsModal({ isOpen, onClose, config, onSave }: SettingsModal
               type="text"
               value={model}
               onChange={(e) => setModel(e.target.value)}
-              placeholder="gemini-3.5-flash"
+              placeholder="gemini-3.8-flash"
               className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all"
             />
           </div>

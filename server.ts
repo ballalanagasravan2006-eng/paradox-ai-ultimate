@@ -50,16 +50,18 @@ async function startServer() {
         }
       }
 
+      const targetModel = (!model || model === 'llama3' || model === 'gemini-3.5-flash') 
+        ? 'gemini-3.8-flash' 
+        : model;
+
       const responseStream = await ai.models.generateContentStream({
-        model: model === 'llama3' ? 'gemini-3.5-flash' : model,
+        model: targetModel,
         contents: geminiMessages,
         config: systemInstruction ? { systemInstruction } : undefined,
       });
 
       for await (const chunk of responseStream) {
         if (chunk.text) {
-          // Wrap the text chunk in the format expected by the frontend
-          // the frontend expects: data: {"message": {"content": "..."}} followed by \n
           const payload = JSON.stringify({ message: { content: chunk.text } });
           res.write(`${payload}\n`);
         }
@@ -68,7 +70,13 @@ async function startServer() {
       res.end();
     } catch (error: any) {
       console.error('API error:', error);
-      res.status(500).json({ error: error.message });
+      if (!res.headersSent) {
+        res.status(500).json({ error: error.message });
+      } else {
+        const payload = JSON.stringify({ error: error.message });
+        res.write(`${payload}\n`);
+        res.end();
+      }
     }
   });
 

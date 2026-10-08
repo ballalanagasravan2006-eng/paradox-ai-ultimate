@@ -9,6 +9,34 @@ export const TOOLS: Tool[] = [
     systemPrompt: "You are Paradox AI, a highly intelligent and human-friendly AI assistant. You are helpful, polite, and extremely capable in a wide variety of tasks."
   },
   {
+    id: "google_drive",
+    name: "Google Drive",
+    icon: "HardDrive",
+    description: "Search, view, and summarize Drive documents.",
+    systemPrompt: "You are Paradox AI connected with Google Drive. You help the user navigate their Google Drive, find documents, summarize notes, and organize files."
+  },
+  {
+    id: "google_calendar",
+    name: "Google Calendar",
+    icon: "Calendar",
+    description: "View schedule, check conflicts, plan events.",
+    systemPrompt: "You are Paradox AI connected with Google Calendar. Help the user schedule appointments, review their upcoming agenda, and organize their meetings."
+  },
+  {
+    id: "google_tasks",
+    name: "Google Tasks",
+    icon: "CheckSquare",
+    description: "Manage to-dos, track deadlines, create tasks.",
+    systemPrompt: "You are Paradox AI connected with Google Tasks. Help the user capture action items, prioritize deadlines, and check off completed work."
+  },
+  {
+    id: "google_contacts",
+    name: "Google Contacts",
+    icon: "Users",
+    description: "Access and search personal and work contacts.",
+    systemPrompt: "You are Paradox AI connected with Google Contacts. Help the user find contact info, email addresses, phone numbers, and draft communications to their contacts."
+  },
+  {
     id: "code",
     name: "Code Generator",
     icon: "Code",
